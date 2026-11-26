@@ -10,11 +10,13 @@ from .cohort_models import Cohort
 from .cohorts import load_wave
 from .constants import WaveState
 from .form_models import FormItem
+from .report_control import withdraw_survey
 from .survey_models import Answer, Survey
 
 router = APIRouter(prefix="/surveys", tags=["匿名观察"])
 
 Scores = conint(strict=True, ge=1, le=5)
+TICKET_PATTERN = r"^[a-fA-F0-9]{16,32}$"
 
 
 class AnswerSheet(BaseModel):
@@ -22,9 +24,16 @@ class AnswerSheet(BaseModel):
 
     wave_id: int = Field(gt=0)
     cohort_id: int = Field(gt=0)
-    ticket: str = Field(pattern=r"^[a-fA-F0-9]{16,32}$")
+    ticket: str = Field(pattern=TICKET_PATTERN)
     consent: StrictBool
     answers: dict[int, Scores] = Field(min_length=2, max_length=12)
+
+
+class Withdrawal(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    wave_id: int = Field(gt=0)
+    ticket: str = Field(pattern=TICKET_PATTERN)
 
 
 @router.post("", status_code=201)
@@ -47,3 +56,8 @@ def register(sheet: AnswerSheet, db: Db, actor: Technician):
     record(db, actor.username, "receive_consent", wave.code)
     db.commit()
     return {"accepted": True, "wave_code": wave.code}
+
+
+@router.post("/withdraw")
+def withdraw(body: Withdrawal, db: Db, actor: Technician):
+    return withdraw_survey(db, body.wave_id, body.ticket, actor.username)

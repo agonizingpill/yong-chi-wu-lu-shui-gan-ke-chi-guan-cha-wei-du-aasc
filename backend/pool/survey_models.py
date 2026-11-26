@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -14,6 +14,7 @@ class Survey(Base):
     wave_id: Mapped[int] = mapped_column(ForeignKey("waves.id"), index=True)
     cohort_id: Mapped[int] = mapped_column(ForeignKey("cohorts.id"), index=True)
     ticket_hash: Mapped[str] = mapped_column(String(64))
+    withdrawn: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default=false())
     marks: Mapped[list["Answer"]] = relationship(lazy="selectin", cascade="all, delete-orphan")
 
 

@@ -11,14 +11,17 @@ router = APIRouter(prefix="/waves", tags=["批次与匿名门槛"])
 
 def load_wave(db, key, *, lock=False):
     query = select(Wave).where(Wave.id == key)
-    wave = db.scalar(query.with_for_update() if lock else query)
+    if lock:
+        query = query.with_for_update().execution_options(populate_existing=True)
+    wave = db.scalar(query)
     if wave is None:
         raise HTTPException(404, "找不到观察批次。")
     return wave
 
 
 def count_cohorts(db, wave_id):
-    tally = select(Survey.cohort_id, func.count(Survey.id)).where(Survey.wave_id == wave_id)
+    tally = select(Survey.cohort_id, func.count(Survey.id)).where(
+        Survey.wave_id == wave_id, Survey.withdrawn.is_(False))
     counts = dict(db.execute(tally.group_by(Survey.cohort_id)).all())
     cohort_rows = db.scalars(select(Cohort).where(Cohort.wave_id == wave_id).order_by(Cohort.code))
     return [(cohort, counts.get(cohort.id, 0)) for cohort in cohort_rows]

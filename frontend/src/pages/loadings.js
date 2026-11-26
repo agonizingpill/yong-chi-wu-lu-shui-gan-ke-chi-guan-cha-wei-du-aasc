@@ -16,7 +16,8 @@ export async function loadingsPage(root,ctx) {
     <section>${selected ? `<article class="pad" data-report="${selected.id}">
       <div class="report-title"><h2>${esc(selected.code)}</h2>${pill(reportStates[selected.state])}</div>
       <p>${esc(wave?.title)} · ${esc(form?.edition)}</p>
-      ${selected.findings ? loadTable(selected.findings,form?.items || []) : empty('当前报告还没有载荷表。')}
+      ${selected.state === 'void' ? empty('该答卷已被撤回，本报告立即失效，停止查阅和签发；旧拟合与排队结果一并作废。') : ''}
+      ${selected.findings ? loadTable(selected.findings,form?.items || []) : (selected.state === 'void' ? '' : empty('当前报告还没有载荷表。'))}
       ${selected.review_note ? `<blockquote>${esc(selected.review_note)}</blockquote>` : ''}
       ${selected.state === 'ready' && actor().role === 'supervisor' ? `<form id="review-form">
           <label>核校意见<input name="note" minlength="6" required></label><button type="submit">确认负荷与反向条目</button>${inlineError}

@@ -7,6 +7,7 @@ from .cohorts import load_wave
 from .constants import FormState, ReportState, WaveState
 from .form_models import EditionRegister, FormItem, Item, ObservationForm
 from .report_control import get_report
+from .report_models import FactorReport
 
 
 def available_items(db):
@@ -23,11 +24,16 @@ def describe_form(form, items):
 
 
 def revise(db, data, actor):
+    # Read the wave id as a bare column (not the entity) so the later locked fetch sees the
+    # latest committed state. Lock order wave -> report -> edition matches withdrawal.
+    wave_id = db.scalar(select(FactorReport.wave_id).where(FactorReport.id == data.report_id))
+    if wave_id is None:
+        raise HTTPException(404, "找不到因子核校单。")
+    wave = load_wave(db, wave_id, lock=True)
+    report = get_report(db, data.report_id, lock=True)
     edition = db.scalar(select(EditionRegister).where(EditionRegister.id == 1).with_for_update())
     if edition is None:
         raise HTTPException(409, "观察表版次尚未建立。")
-    report = get_report(db, data.report_id, lock=True)
-    wave = load_wave(db, report.wave_id, lock=True)
     if report.state != ReportState.APPROVED or wave.state != WaveState.REVIEW or report.findings is None:
         raise HTTPException(409, "新表需要已核校且未使用过的因子报告。")
     if edition.current_form_id != wave.form_id:

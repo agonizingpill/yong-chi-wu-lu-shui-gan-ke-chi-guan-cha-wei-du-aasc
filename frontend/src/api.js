@@ -7,7 +7,8 @@ export function pool(token) {
   const post = (path,data) => request(path,{token,data,method:'POST'});
   return {
     waves:() => get('/waves'), forms:() => get('/forms'), reports:() => get('/factors'),
-    submit:data => post('/surveys',data), fit:wave_id => post('/factors',{wave_id}),
+    submit:data => post('/surveys',data), withdraw:data => post('/surveys/withdraw',data),
+    fit:wave_id => post('/factors',{wave_id}),
     approve:(id,note) => post(`/factors/${id}/approve`,{note}),
     publish:data => post('/forms/publish',data),
   };

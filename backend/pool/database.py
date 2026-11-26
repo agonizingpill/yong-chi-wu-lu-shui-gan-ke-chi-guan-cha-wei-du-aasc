@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .settings import DB_URL
@@ -23,3 +23,8 @@ def initialize():
     from . import cohort_models, identity_models, report_models, survey_models, form_models
 
     Base.metadata.create_all(engine)
+    # create_all never alters an existing table; add the withdrawal flag to older volumes.
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as connection:
+            connection.execute(text(
+                "ALTER TABLE surveys ADD COLUMN IF NOT EXISTS withdrawn BOOLEAN NOT NULL DEFAULT false"))

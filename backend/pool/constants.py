@@ -23,6 +23,7 @@ class ReportState(StrEnum):
     READY = "ready"
     FAILED = "failed"
     APPROVED = "approved"
+    VOID = "void"
 
 
 class FormState(StrEnum):
